@@ -1,0 +1,10 @@
+{"v":1,"ts":1790200000,"event":"task.dispatched","task":"dark-mode","kind":"ship","project":"webapp","harness":"claude","model":"opus"}
+{"v":1,"ts":1790200005,"event":"task.status","task":"auth-audit","state":"working","key":null,"text":" reading session.ts"}
+{"v":1,"ts":1790200010,"event":"task.dispatched","task":"auth-audit","kind":"scout","project":"api","harness":"claude","model":null}
+{"v":1,"ts":1790200020,"event":"task.dispatched","task":"rate-limit","kind":"ship","project":"api","harness":"codex","model":null}
+{"v":1,"ts":1790200100,"event":"task.status","task":"dark-mode","state":"needs-decision","key":"theme","text":" CSS variables or Tailwind dark: classes?"}
+{"v":1,"ts":1790200150,"event":"task.status","task":"rate-limit","state":"failed","key":null,"text":" 3 tests failing"}
+{"v":1,"ts":1790200150,"event":"task.status","task":"rate-limit","state":"failed","key":null,"text":" 3 tests failing"}
+{"v":1,"ts":1790200160,"event":"task.future_event","task":"rate-limit","something":"new"}
+not json at all
+{"v":1,"ts":1790200200,"event":"task.dispatched","task":"mate-2","kind":"secondmate","project":null,"harness":"claude","model":null}

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crew City</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --card: #ffffff; --line: #e2e0d8; --text: #23221f; --muted: #6b6a64;
+    --work: #2f6fb3; --work-bg: #e6f0fa; --alert: #9a5b08; --alert-bg: #fbf0dc;
+    --fire: #b3312f; --fire-bg: #fbe9e8; --ok: #2f7a3d; --ok-bg: #e7f3e7; --idle: #6b6a64; --idle-bg: #efeee9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161614; --card: #1f1f1c; --line: #33322e; --text: #ecebe6; --muted: #a09f98;
+      --work: #8bbcf0; --work-bg: #1d2c3d; --alert: #f2c26b; --alert-bg: #3a2c12;
+      --fire: #f39c99; --fire-bg: #3d1d1c; --ok: #8fd19a; --ok-bg: #1c3320; --idle: #a09f98; --idle-bg: #2a2a26;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, sans-serif; }
+  header { position: sticky; top: 0; background: var(--bg); border-bottom: 1px solid var(--line); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  h1 { font-size: 17px; font-weight: 600; margin: 0; margin-right: auto; }
+  .stat { font-size: 13px; color: var(--muted); }
+  .stat b { color: var(--text); font-weight: 600; }
+  .stat.hot b { color: var(--fire); }
+  .stat.ask b { color: var(--alert); }
+  #conn { font-size: 12px; color: var(--muted); }
+  main { max-width: 760px; margin: 0 auto; padding: 16px; }
+  h2 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 20px 0 8px; }
+  .task { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+  .task.gone { opacity: .55; }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .name { font-weight: 600; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .badge { margin-left: auto; font-size: 12px; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+  .p-working, .p-dispatched { color: var(--work); background: var(--work-bg); }
+  .p-needs-decision, .p-blocked, .p-paused, .p-pr-ready { color: var(--alert); background: var(--alert-bg); }
+  .p-failed { color: var(--fire); background: var(--fire-bg); }
+  .p-merged, .p-done { color: var(--ok); background: var(--ok-bg); }
+  .activity { margin-top: 4px; font-size: 14px; overflow-wrap: anywhere; }
+  .activity:empty { display: none; }
+  a { color: var(--work); }
+  .empty { color: var(--muted); text-align: center; padding: 40px 0; }
+  .empty code { font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Crew City</h1>
+  <span class="stat">Population <b id="s-pop">0</b></span>
+  <span class="stat">Crew <b id="s-crew">0</b></span>
+  <span class="stat ask">Needs you <b id="s-ask">0</b></span>
+  <span class="stat hot">Fires <b id="s-fire">0</b></span>
+  <span id="conn">Connecting…</span>
+</header>
+<main id="city"><p class="empty">Waiting for the ledger…</p></main>
+
+<script>
+  const LABEL = {
+    dispatched: "Breaking ground", working: "Building", "needs-decision": "Needs your decision",
+    blocked: "Blocked", paused: "Paused", failed: "On fire", done: "Done, awaiting PR",
+    "pr-ready": "Inspection (PR ready)", merged: "Finished",
+  };
+
+  const params = new URLSearchParams(location.search);
+  const token = params.get("token");
+  // Keep the token out of the address bar once read.
+  if (token) history.replaceState(null, "", location.pathname);
+
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+
+  function renderTask(t) {
+    const card = el("div", "task" + (t.workerPresent ? "" : " gone"));
+    const row = el("div", "row");
+    row.append(el("span", "name", t.id));
+    const bits = [t.kind, t.harness, t.model].filter(Boolean).join(" · ");
+    row.append(el("span", "meta", bits + (t.workerPresent ? "" : " · worker left")));
+    row.append(el("span", "badge p-" + t.phase, LABEL[t.phase] ?? t.phase));
+    card.append(row);
+
+    const act = el("div", "activity");
+    if (t.phase === "needs-decision" && t.decisionKey) act.textContent = `[${t.decisionKey}] ${t.activity ?? ""}`;
+    else if (t.activity) act.textContent = t.activity;
+    card.append(act);
+
+    if (t.pr && /^https:\/\//.test(t.pr)) {
+      const a = el("a", "meta", t.pr.replace(/^https:\/\/(www\.)?github\.com\//, ""));
+      a.href = t.pr; a.target = "_blank"; a.rel = "noopener noreferrer";
+      const r = el("div", "row"); r.style.marginTop = "4px"; r.append(a);
+      card.append(r);
+    }
+    return card;
+  }
+
+  function render(msg) {
+    document.getElementById("s-pop").textContent = msg.stats.population;
+    document.getElementById("s-crew").textContent = msg.stats.crew;
+    document.getElementById("s-ask").textContent = msg.stats.needsYou;
+    document.getElementById("s-fire").textContent = msg.stats.fires;
+
+    const main = document.getElementById("city");
+    main.replaceChildren();
+    const names = Object.keys(msg.districts).sort();
+    if (!names.length) {
+      const p = el("p", "empty", "No tasks yet. Following ");
+      p.append(el("code", null, msg.ledgerPath));
+      main.append(p);
+      return;
+    }
+    for (const name of names) {
+      main.append(el("h2", null, name === "(remote)" ? "Remote second mates" : name + " district"));
+      for (const t of msg.districts[name]) main.append(renderTask(t));
+    }
+  }
+
+  function connect() {
+    const conn = document.getElementById("conn");
+    if (!token) { conn.textContent = "Missing token: open the URL the server printed."; return; }
+    const ws = new WebSocket(`ws://${location.host}/ws?token=${encodeURIComponent(token)}`);
+    ws.onopen = () => (conn.textContent = "Live");
+    ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.type === "city") render(m); };
+    ws.onclose = () => { conn.textContent = "Reconnecting…"; setTimeout(connect, 2000); };
+  }
+  connect();
+</script>
+</body>
+</html>
