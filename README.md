@@ -62,6 +62,7 @@ npm run dev       # restart on change
 - [Decisions](docs/decisions.md): what was chosen, why, and what else was considered
 - [Open questions](docs/open-questions.md): unknowns still to verify
 - [Tech research: desktop app](docs/tech-research.md): Electron vs Tauri and what it means for the code
+- [Visual style](docs/visual-style.md): character design and colors
 
 ## Roadmap
 

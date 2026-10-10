@@ -44,14 +44,6 @@ Each entry records what was decided, why, and what was considered instead. Newes
 
 **Why:** Fastest to build and test, and the server and UI carry over unchanged if the server stays importable and the UI stays a plain web app. See [tech-research.md](tech-research.md).
 
-## 9. Electron as the desktop shell (proposed)
-
-**Proposed:** Electron, pending a spike once the 3D city exists.
-
-**Why:** The server is Node and runs in Electron's main process with no sidecar. Bundled Chromium gives the same WebGL on macOS and Linux; Tauri's own docs list WebKitGTK rendering and WebGL problems on Linux. node-pty + xterm.js keep embedded terminals possible.
-
-**Considered:** Tauri 2: much smaller bundles, built-in updater, capability permissions, but the Node server would run as a `pkg`-compiled sidecar and 3D on Linux is a known risk. Electrobun and Deno desktop: too early.
-
 ## 6. Vault read-only at first
 
 **Decided:** The first version of the vault reader never writes to COWORK OS.
@@ -74,3 +66,19 @@ Each entry records what was decided, why, and what was considered instead. Newes
 **Decided (step 1):** Node's `http` module plus `ws`, TypeScript run with `tsx`, tests with Vitest.
 
 **Why:** The server serves one page and one WebSocket. A framework can be added if the API grows.
+
+## 9. Electron as the desktop shell (proposed)
+
+**Proposed:** Electron, pending a spike once the 3D city exists.
+
+**Why:** The server is Node and runs in Electron's main process with no sidecar. Bundled Chromium gives the same WebGL on macOS and Linux; Tauri's own docs list WebKitGTK rendering and WebGL problems on Linux. node-pty + xterm.js keep embedded terminals possible.
+
+**Considered:** Tauri 2: much smaller bundles, built-in updater, capability permissions, but the Node server would run as a `pkg`-compiled sidecar and 3D on Linux is a known risk. Electrobun and Deno desktop: too early.
+
+## 10. Blocky people as the character style
+
+**Decided:** Characters are blocky people built from boxes in code, with role shown by outfit and hat and state shown by bubble and pose. Spec in [visual-style.md](visual-style.md).
+
+**Why:** The most expressive of the three concepts: arms can hammer, raise a hand, and hold props, so state shows in the pose as well as the bubble. Built in code, so there are no model files or asset licenses.
+
+**Considered:** Round toy figures (friendly, fewer gestures) and wooden peg dolls (calmest, no arms, so state only from bubbles and movement). A toy-brand minifigure look was ruled out because that design is protected.
