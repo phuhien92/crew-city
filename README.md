@@ -24,7 +24,7 @@ Wrapper server
 
 ## Run it
 
-Requires Node 20 or later.
+Requires Node 22 or later.
 
 ```sh
 npm install
@@ -64,7 +64,7 @@ npm run typecheck
 npm run dev       # restart on change
 ```
 
-Tests use recorded or made-up data, never live agents. CI runs typecheck and tests on every push and pull request (Ubuntu with Node 20 and 22, macOS with Node 22). What each test covers, and the testing plan: [docs/testing.md](docs/testing.md).
+Tests use recorded or made-up data, never live agents. CI runs typecheck and tests on every push and pull request (Ubuntu with Node 22 and 24, macOS with Node 24). What each test covers, and the testing plan: [docs/testing.md](docs/testing.md).
 
 Code layout:
 

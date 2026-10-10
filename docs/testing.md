@@ -4,7 +4,7 @@ Logic stays pure and is tested without a browser or GPU. Tests use recorded or m
 
 ## What runs today
 
-`npm test` (Vitest), and in CI on every push and pull request (Ubuntu with Node 20 and 22, macOS with Node 22):
+`npm test` (Vitest), and in CI on every push and pull request (Ubuntu with Node 22 and 24, macOS with Node 24):
 
 | File | Covers |
 | --- | --- |
