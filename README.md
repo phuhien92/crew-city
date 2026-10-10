@@ -56,6 +56,13 @@ npm run typecheck
 npm run dev       # restart on change
 ```
 
+## Docs
+
+- [Architecture](docs/architecture.md): sources, data flow, UI plan, security rules
+- [Decisions](docs/decisions.md): what was chosen, why, and what else was considered
+- [Open questions](docs/open-questions.md): unknowns still to verify
+- [Tech research: desktop app](docs/tech-research.md): Electron vs Tauri and what it means for the code
+
 ## Roadmap
 
 1. Ledger tailer + list UI ✅
@@ -63,3 +70,4 @@ npm run dev       # restart on change
 3. Vault reader: COWORK OS HQs as districts (read-only)
 4. 3D isometric city with react-three-fiber
 5. Command relay (merge, decisions) and voice
+6. Desktop app (Electron proposed; see the tech research)
