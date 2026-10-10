@@ -1,4 +1,10 @@
-# Crew City
+<p align="center">
+  <img src="assets/brand/mark.svg" width="160" alt="Crew City logo: three block towers, the tallest wearing a hard hat">
+</p>
+
+<h1 align="center">Crew City</h1>
+
+<p align="center"><b>Your agent crew, as a city</b></p>
 
 A SimCity-style view of a [firstmate](https://github.com/kunchenguid/firstmate) crew, with COWORK OS as the knowledge layer.
 

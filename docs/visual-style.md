@@ -69,3 +69,16 @@ Above each head: the task ID with a status dot in the phase color.
 
 - No brand logos for agent tools (Claude, Codex, and others). If the harness needs showing, use a small colored badge.
 - Role must be readable from silhouette alone when zoomed out.
+
+## Logo
+
+Three isometric block towers (navy, orange, teal); the tallest, orange tower wears an amber hard hat, so the mark reads as both the city and the crew.
+
+| File | Use |
+| --- | --- |
+| [`assets/brand/mark.svg`](../assets/brand/mark.svg) | The mark on its own: README, favicon, in-app header |
+| [`assets/brand/icon.svg`](../assets/brand/icon.svg) | App icon: the mark on a rounded light-blue tile (`#B5D4F4`), 512 × 512 |
+
+- Wordmark: "Crew City" in Bricolage Grotesque 700, with "City" in orange (`#D85A30` on light, `#F0997B` on dark).
+- Tagline: "Your agent crew, as a city".
+- The mark keeps its colors on light and dark backgrounds; only the wordmark color changes.
