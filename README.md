@@ -69,6 +69,7 @@ npm run dev       # restart on change
 - [Open questions](docs/open-questions.md): unknowns still to verify
 - [Tech research: desktop app](docs/tech-research.md): Electron vs Tauri and what it means for the code
 - [Visual style](docs/visual-style.md): character design and colors
+- [Map and landscaping](docs/map.md): city layout, growth, landscaping, camera
 
 ## Roadmap
 

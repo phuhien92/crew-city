@@ -49,3 +49,27 @@ Things not yet verified. Each one notes what is known, what is unknown, and wher
 - **Known:** HQ folders each hold `CLAUDE.md`, `MEMORY.md`, and a Resources folder.
 - **Unknown:** The full list of HQs and whether every HQ follows the same layout and active-task format.
 - **Check:** Run the `cowork-os-audit` skill, or list the vault before writing the reader.
+
+## District layout file
+
+- **Known:** District placement must stay stable, and HQ districts don't come from the ledger, so placements are saved in `layout.json` ([map.md](map.md)).
+- **Unknown:** Where the file lives before the desktop app exists (repo folder, `~/.crew-city/`, or the OS app-data folder), and how a renamed project or HQ keeps its slot.
+- **Check:** Decide during step 4; Electron's `app.getPath("userData")` is the likely home once the app exists.
+
+## Building height from PR size
+
+- **Known:** The ledger has no PR size, so building height is fixed.
+- **Unknown:** Whether PR stats (lines changed) from GitHub are worth fetching for height, and what to do for local-only merges, which have no PR.
+- **Check:** `gh pr view <url> --json additions,deletions`.
+
+## Map numbers
+
+- **Known:** Lot, block, road, and consolidation sizes in [map.md](map.md) are starting values.
+- **Unknown:** Whether 4 × 3 lots per district and consolidating past 12 buildings suit a real fleet.
+- **Check:** Run the demo ledger and a real firstmate home in the step 4 city.
+
+## Performance target
+
+- **Known:** Target is 60 fps with about 20 agents and 300 buildings on a laptop.
+- **Unknown:** Not measured.
+- **Check:** Step 4, with a generated large ledger.
