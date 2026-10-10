@@ -52,7 +52,7 @@ Revisit Tauri if bundle size becomes important and Linux 3D can be tested on rea
 
 ## What this means for the code now
 
-- **Keep the server importable.** Export a `startServer({ ledgerPath, port, token })` function so Electron's main process can call it; `src/server/index.ts` stays the CLI entry.
+- **Keep the server importable.** Done: `src/server/server.ts` exports `startServer({ ledgerPath, port, host, token })`, which Electron's main process can call; `src/server/index.ts` stays the CLI entry.
 - **Keep the UI a plain web app** (Vite + React when step 4 starts), loaded from the local server or from files. Use relative URLs.
 - **Keep the token.** Even inside Electron, the hook endpoint listens on a port that other local processes can reach.
 - **Load assets locally** (glTF models, fonts). No CDNs, so the app works offline.

@@ -46,7 +46,7 @@ Contract: [firstmate docs/fleet-ledger.md](https://github.com/kunchenguid/firstm
 - Contract rules the reader follows: ignore unknown events and members; tolerate duplicate records (delivery is at least once); a status record can arrive before its `task.dispatched`; no sequence numbers; the file is never rotated but can be truncated with `: > state/fleet-ledger.jsonl`.
 - Not in the ledger: whether a worker is idle or mid-turn, session IDs, worktree paths. Live activity comes from hooks (source 2).
 
-Implementation: `src/server/ledger.ts` (parser and tailer), `src/server/city.ts` (reducer).
+Implementation: `src/server/ledger.ts` (parser and tailer), `src/server/city.ts` (reducer), `src/server/server.ts` (`startServer()`, used by the CLI entry `src/server/index.ts` and the tests).
 
 - The tailer reads from a saved byte offset, holds back a partial last line, decodes UTF-8 across read boundaries, waits for a file that doesn't exist yet, and restarts from the top when the file shrinks.
 - The reducer is pure. Restarting the server replays the ledger and rebuilds the city. History only covers tasks since the ledger was turned on.

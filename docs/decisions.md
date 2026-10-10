@@ -82,3 +82,11 @@ Each entry records what was decided, why, and what was considered instead. Newes
 **Why:** The most expressive of the three concepts: arms can hammer, raise a hand, and hold props, so state shows in the pose as well as the bubble. Built in code, so there are no model files or asset licenses.
 
 **Considered:** Round toy figures (friendly, fewer gestures) and wooden peg dolls (calmest, no arms, so state only from bubbles and movement). A toy-brand minifigure look was ruled out because that design is protected.
+
+## 11. Testing approach
+
+**Decided:** Pure logic is tested without a browser or GPU, against recorded or made-up data, never live agents. CI (GitHub Actions) runs typecheck and tests on every push and pull request on Ubuntu (Node 20, 22) and macOS (Node 22). Real-browser end-to-end tests (Playwright) start with step 2's approval flow. Details in [testing.md](testing.md).
+
+**Why:** Fast, repeatable tests that cost no tokens. Step 1 is already covered end to end with a real server and the real page in jsdom; a browser suite earns its place where jsdom can't reach: real clicks on approvals, WebGL, and the desktop app.
+
+**Considered:** Adding Playwright now. It would mostly repeat the jsdom tests while the UI is a single list page.

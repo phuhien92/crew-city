@@ -6,6 +6,8 @@
 
 <p align="center"><b>Your agent crew, as a city</b></p>
 
+<p align="center"><a href="https://github.com/phuhien92/crew-city/actions/workflows/ci.yml"><img src="https://github.com/phuhien92/crew-city/actions/workflows/ci.yml/badge.svg" alt="CI status"></a></p>
+
 A SimCity-style view of a [firstmate](https://github.com/kunchenguid/firstmate) crew, with COWORK OS as the knowledge layer.
 
 Firstmate and the vault stay untouched. Crew City only reads from them, apart from one narrow command path (coming in step 5).
@@ -22,7 +24,7 @@ Wrapper server
 
 ## Run it
 
-Requires Node 20+.
+Requires Node 20 or later.
 
 ```sh
 npm install
@@ -57,10 +59,24 @@ The reducer in `src/server/city.ts` is pure, so restarting the server replays th
 ## Develop
 
 ```sh
-npm test          # reducer + tailer tests, using firstmate's documented sample ledger
+npm test          # all tests: tailer, reducer, server, and page safety
 npm run typecheck
 npm run dev       # restart on change
 ```
+
+Tests use recorded or made-up data, never live agents. CI runs typecheck and tests on every push and pull request (Ubuntu with Node 20 and 22, macOS with Node 22). What each test covers, and the testing plan: [docs/testing.md](docs/testing.md).
+
+Code layout:
+
+| Path | What |
+| --- | --- |
+| `src/server/ledger.ts` | Ledger parser and tailer |
+| `src/server/city.ts` | Pure reducer: ledger events to city state |
+| `src/server/server.ts` | `startServer()`: HTTP page, token-gated WebSocket feed |
+| `src/server/index.ts` | Command-line entry |
+| `src/server/demo.ts` | Scripted fleet for `npm run demo` |
+| `public/index.html` | Step 1 list UI |
+| `test/` | Vitest tests and fixtures |
 
 ## Docs
 
@@ -70,6 +86,7 @@ npm run dev       # restart on change
 - [Tech research: desktop app](docs/tech-research.md): Electron vs Tauri and what it means for the code
 - [Visual style](docs/visual-style.md): character design and colors
 - [Map and landscaping](docs/map.md): city layout, growth, landscaping, camera
+- [Testing](docs/testing.md): what the tests cover and the testing plan
 
 ## Roadmap
 
