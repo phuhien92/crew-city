@@ -6,10 +6,10 @@ Crew City is a local wrapper that shows a [firstmate](https://github.com/kunchen
 City UI (browser)
    ▲  WebSocket, token-gated, 127.0.0.1 only
 Wrapper server (Node)
-   ├─ Ledger tailer   ← firstmate state/fleet-ledger.jsonl
-   ├─ Hook endpoint   ← Claude Code hooks from crewmates
-   ├─ Vault reader    ← COWORK OS (Obsidian vault)
-   └─ Command relay   → first mate's tmux pane
+   ├─ Ledger tailer    ← firstmate state/fleet-ledger.jsonl
+   ├─ Runtime adapters ← Pi extension (Claude Code/Codex/OpenCode boundaries only)
+   ├─ Vault reader     ← COWORK OS (Obsidian vault)
+   └─ Command relay    → first mate's tmux pane
 ```
 
 Firstmate and the vault are never modified by the wrapper, except through the command relay, which only passes your own answers to the first mate.
@@ -19,7 +19,7 @@ Firstmate and the vault are never modified by the wrapper, except through the co
 | Piece | Status |
 | --- | --- |
 | Ledger tailer + city reducer + list UI | Done (step 1) |
-| Hook endpoint (activity, approvals) | Not started (step 2) |
+| Runtime adapters (activity, approvals) | Pi implemented; Claude Code, Codex, and OpenCode boundary-only (step 2) |
 | Vault reader | Not started (step 3) |
 | 3D city renderer | Not started (step 4) |
 | Command relay, voice | Not started (step 5) |
@@ -44,32 +44,44 @@ Contract: [firstmate docs/fleet-ledger.md](https://github.com/kunchenguid/firstm
 | `task.cleaned_up` | none |
 
 - Contract rules the reader follows: ignore unknown events and members; tolerate duplicate records (delivery is at least once); a status record can arrive before its `task.dispatched`; no sequence numbers; the file is never rotated but can be truncated with `: > state/fleet-ledger.jsonl`.
-- Not in the ledger: whether a worker is idle or mid-turn, session IDs, worktree paths. Live activity comes from hooks (source 2).
+- Not in the ledger: whether a worker is idle or mid-turn, session IDs, worktree paths. Ephemeral live activity comes from runtime adapters (source 2).
 
 Implementation: `src/server/ledger.ts` (parser and tailer), `src/server/city.ts` (reducer), `src/server/server.ts` (`startServer()`, used by the CLI entry `src/server/index.ts` and the tests).
 
 - The tailer reads from a saved byte offset, holds back a partial last line, decodes UTF-8 across read boundaries, waits for a file that doesn't exist yet, and restarts from the top when the file shrinks.
 - The reducer is pure. Restarting the server replays the ledger and rebuilds the city. History only covers tasks since the ledger was turned on.
 
-### 2. Claude Code hooks (step 2)
+### 2. Runtime adapters (step 2)
 
-Reference: [Claude Code hooks](https://code.claude.com/docs/en/hooks).
+The adapter contract in `src/server/runtime/contract.ts` normalizes two ephemeral concerns only:
 
-- Hooks can be `http` handlers: Claude Code POSTs the event JSON to a URL and reads the decision from the response body.
-- Every hook input includes `session_id`, `transcript_path`, `cwd`, and `hook_event_name`.
-- `PermissionRequest` fires when a tool call needs approval. Input includes `tool_name` and `tool_input`. The hook can answer:
+- latest live activity for a ledger task;
+- a blocking approval request and its explicit allow/deny result.
 
-```json
-{ "hookSpecificOutput": { "hookEventName": "PermissionRequest", "decision": { "behavior": "allow" } } }
-```
+It does not replace or write to firstmate's ledger. Dispatch, status, PR, merge, and cleanup remain durable ledger events. Runtime events carry an explicit ledger task id and are de-duplicated by `(runtime, eventId)`; malformed events are rejected, exact duplicates are idempotent, and event-id collisions return a conflict.
 
-  with `"deny"` to refuse. `decision.updatedInput` can rewrite the tool input when allowing.
-- Exit code 2 is not honored for `PermissionRequest`; denial must go through the `decision` object.
-- Default timeout for `command` and `http` hooks is 600 seconds, set per hook with `timeout`. A timed-out hook returns no decision, and the call continues through the normal permission flow (the terminal prompt).
-- `onFailure: "block"` (Claude Code v2.1.295 or later) makes a failed `PermissionRequest` hook deny the request.
-- Hooks can live in `~/.claude/settings.json` (all projects) or a project's `.claude/settings.json`.
+| Adapter | Live activity | Blocking approvals | Status |
+| --- | --- | --- | --- |
+| Pi | Supported | Supported | Implemented |
+| Claude Code | Unsupported | Unsupported | Named boundary only |
+| Codex | Unsupported | Unsupported | Named boundary only |
+| OpenCode | Unsupported | Unsupported | Named boundary only |
 
-Planned use: an HTTP `PermissionRequest` hook pointing at the wrapper. The wrapper holds the request open, shows an approval card, and responds on Approve or Deny. Other hook events (`PreToolUse`, `PostToolUse`, `Stop`, `Notification`) feed each worker's activity line.
+“Unsupported” describes Crew City's current adapter, not a claim about what the runtime could support in a future integration.
+
+#### Pi
+
+Reference: the installed Pi 1.1.0 extension documentation and its permission-gate examples.
+
+`extensions/crew-city.ts` uses supported Pi extension APIs:
+
+- `session_start`, `before_agent_start`, `tool_execution_start`, `tool_execution_end`, `agent_settled`, and `session_shutdown` publish best-effort activity;
+- an asynchronous `tool_call` handler inspects `pi.getAllTools()` annotations and waits for Crew City's response;
+- a deny response returns `{ block: true, reason }`. Pi documents handler failure as fail-safe blocking too.
+
+Pi does not expose a Claude Code `PermissionRequest` hook. Crew City therefore implements blocking approval as extension policy at Pi's pre-execution `tool_call` boundary. Calls marked read-only continue without a card. Destructive tools and non-read-only tools whose destructive/open-world behavior is not explicitly false block until an explicit response. The bridge also blocks on missing configuration, a non-loopback endpoint, network failure, timeout, or malformed response.
+
+The extension posts bearer-token-protected JSON to `POST /api/runtime/pi/events`. An approval POST stays open while the card is pending. The authenticated browser sends the decision over its existing WebSocket. Timeouts deny. Decisions are appended to Crew City's own approval audit JSONL before an allow response is released.
 
 ### 3. COWORK OS vault (step 3)
 
@@ -87,22 +99,22 @@ Planned use: each HQ becomes a district; its active tasks feed that district's b
 ## UI
 
 - **City view:** one district per project (and later per HQ). Each task is a lot: breaking ground → scaffolding → City Hall alert / fire → inspection → finished building. A finished building stays after its worker leaves.
-- **Control panel (left):** approval queue first (permission requests, then decisions), then one card per worker with task, project, kind, harness, phase, activity line, context usage, and PR link. Selecting a card selects and follows the character, and the reverse.
+- **Control panel (left):** approval queue first (runtime tool requests, then decisions), then one card per worker with task, project, kind, harness, phase, activity line, context usage, and PR link. Selecting a card selects and follows the character, and the reverse.
 - **Top roster bar** with a status dot per worker; **bottom status line** with working, idle, and error counts; **voice bar** for the first mate (step 5).
 
 ## Security
 
 The server can approve tool calls on your machine, so it is treated as sensitive from step 1.
 
-- Binds to `127.0.0.1` by default.
-- A random token is printed at startup. The WebSocket rejects a missing or wrong token (compared in constant time) and any foreign `Origin`. The page removes the token from the address bar after reading it.
+- Binds only to loopback (`127.0.0.1` by default; `::1` is also accepted).
+- A random token is printed at startup. The WebSocket rejects a missing or wrong token (compared in constant time) and any foreign `Origin`. Runtime HTTP events require the same token as a bearer credential and reject foreign origins. The page removes the token from the address bar after reading it.
+- The server binds to loopback by default, and the Pi bridge refuses non-loopback URLs so its bearer token is not sent remotely.
 - Content Security Policy on the page; data is rendered with `textContent`, never as HTML; only `https://` PR links are rendered as links.
 - Approval rules (step 2):
-  - Every card shows the full command and working directory.
-  - No "approve all".
-  - Every approval and denial goes to an audit log.
-  - "Always allow" only for commands that don't change anything.
-  - If no one answers, the request falls back to the terminal; it is never approved by default.
+  - Every card shows the full tool input and working directory, including the full command for `bash`.
+  - No "approve all" or persistent allow rule.
+  - Every explicit approval and denial is appended to a mode-`0600` audit log; its default path is outside the firstmate home.
+  - No answer, unavailable server, incomplete configuration, malformed response, or timeout denies the Pi tool call. It is never approved by default.
 - Vault rules (step 3):
   - Agents read freely and write only to an HQ's Resources folder.
   - `MEMORY.md` is updated only by you or through the first mate, and holds facts only: no suggestions, predictions, or estimates; unknowns are written as unknown.
