@@ -8,11 +8,11 @@ Researched October 2026. Version numbers and benchmarks go stale; re-check befor
 
 | Need | Why |
 | --- | --- |
-| Run the Node server (ledger tailer, hook endpoint, vault reader) | All of steps 1–3 is Node/TypeScript |
+| Run the Node server (ledger tailer, runtime adapters, vault reader) | All of steps 1–3 is Node/TypeScript |
 | Fast, consistent WebGL | 3D city with react-three-fiber (decision 4) |
 | macOS and Linux | Firstmate runs on macOS and Linux only |
 | Read files anywhere (firstmate home, iCloud vault) | Ledger and vault live outside the app |
-| Local HTTP listener | Claude Code `http` hooks POST to it |
+| Local HTTP listener | Runtime adapters (the Pi extension today) POST to it |
 | Spawn processes, talk to tmux | Command relay (step 5) |
 | Optional: embedded terminals | Watching or typing into a crewmate, like Munder Difflin does with node-pty + xterm.js |
 | Microphone, global hotkey, tray, notifications | Voice bar, approval alerts |
@@ -54,6 +54,6 @@ Revisit Tauri if bundle size becomes important and Linux 3D can be tested on rea
 
 - **Keep the server importable.** Done: `src/server/server.ts` exports `startServer({ ledgerPath, port, host, token })`, which Electron's main process can call; `src/server/index.ts` stays the CLI entry.
 - **Keep the UI a plain web app** (Vite + React when step 4 starts), loaded from the local server or from files. Use relative URLs.
-- **Keep the token.** Even inside Electron, the hook endpoint listens on a port that other local processes can reach.
+- **Keep the token.** Even inside Electron, the runtime event endpoint listens on a port that other local processes can reach.
 - **Load assets locally** (glTF models, fonts). No CDNs, so the app works offline.
 - **Plan for signing early.** Distributing on macOS outside a dev machine needs an Apple Developer ID certificate and notarization, whichever shell is used.
