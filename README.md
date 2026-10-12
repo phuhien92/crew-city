@@ -40,7 +40,7 @@ To have firstmate write the ledger, create the flag file in its home:
 touch ~/firstmate/config/fleet-ledger
 ```
 
-Server settings (environment variables): `FM_HOME`, `LEDGER` (overrides the ledger path), `PORT` (default 4317), `HOST` (loopback only; default 127.0.0.1), `CREW_CITY_TOKEN` (fixed browser token instead of a random one; set it only on the server command line, never in a shell profile or any Pi agent environment), `CREW_CITY_RUNTIME_TOKEN` (fixed runtime token; must differ from the browser token), `APPROVAL_AUDIT` (default `~/.crew-city/approval-audit.jsonl`), and `APPROVAL_TIMEOUT_MS` (default 4 minutes, so the timeout denial and its audit entry reach Pi before Pi's fixed 5-minute HTTP headers timeout; a longer override is cut off at 5 minutes by Pi and recorded as `abandoned`).
+Server settings (environment variables): `FM_HOME`, `LEDGER` (overrides the ledger path), `PORT` (default 4317), `HOST` (loopback only; default 127.0.0.1), `CREW_CITY_TOKEN` (fixed browser token instead of a random one; set it only on the server command line, never in a shell profile or any Pi agent environment), `CREW_CITY_RUNTIME_TOKEN` (fixed runtime token; must differ from the browser token), `APPROVAL_AUDIT` (default `~/.crew-city/approval-audit.jsonl`), and `APPROVAL_TIMEOUT_MS` (default 4 minutes, so the timeout denial and its audit entry reach Pi before Pi's default 5-minute HTTP idle timeout, Pi's configurable `httpIdleTimeout` setting).
 
 ### Connect Pi
 
@@ -57,7 +57,7 @@ The extension uses Pi's supported lifecycle and `tool_call` events. Explicitly r
 
 The browser approver token belongs only to the Crew City server and the browser. Never put `CREW_CITY_TOKEN` or the browser URL into a Pi agent's environment: anything Pi runs could then approve its own tool calls.
 
-Optional Pi settings are `CREW_CITY_ACTIVITY_TIMEOUT_MS` (default 1.5 seconds) and `CREW_CITY_APPROVAL_TIMEOUT_MS` (default 5 minutes; keep it longer than the server's `APPROVAL_TIMEOUT_MS` so Crew City's timeout denial arrives first). If Pi stops waiting – the turn is aborted or its own timeout fires – Crew City denies the pending approval and removes the card.
+Optional Pi settings are `CREW_CITY_ACTIVITY_TIMEOUT_MS` (default 1.5 seconds) and `CREW_CITY_APPROVAL_TIMEOUT_MS` (default 5 minutes; keep it longer than the server's `APPROVAL_TIMEOUT_MS` so Crew City's timeout denial arrives first). Pi's own `httpIdleTimeout` setting also bounds the wait: a value of it or `CREW_CITY_APPROVAL_TIMEOUT_MS` shorter than `APPROVAL_TIMEOUT_MS` shortens the approval window to that value, and a longer `APPROVAL_TIMEOUT_MS` has no effect beyond it. Either way the result still fails closed: if Pi stops waiting – the turn is aborted or a Pi-side timeout fires – Pi blocks the tool, and Crew City denies the pending approval, audits it as `abandoned`, and removes the card.
 
 Pi is implemented. Claude Code, Codex, and OpenCode currently expose named adapter boundaries and report their live-activity and approval capabilities as unsupported until a real integration is built.
 

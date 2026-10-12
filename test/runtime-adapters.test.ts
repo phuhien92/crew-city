@@ -102,7 +102,7 @@ describe("runtime event hub", () => {
     await runtime.close();
   });
 
-  it("denies by default before Pi's fixed 300-second HTTP headers timeout", async () => {
+  it("denies by default before Pi's default 5-minute HTTP idle timeout", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     const dir = mkdtempSync(join(tmpdir(), "crew-city-runtime-"));
     const auditPath = join(dir, "audit.jsonl");

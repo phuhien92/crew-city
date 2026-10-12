@@ -59,7 +59,7 @@ export interface RuntimeHubOptions {
   id?: () => string;
 }
 
-/** Below Pi's fixed 300-second HTTP headers timeout, so Crew City's timeout denial reaches Pi first. */
+/** Below Pi's default 5-minute HTTP idle timeout (`httpIdleTimeout`), so Crew City's timeout denial reaches Pi first. */
 export const DEFAULT_APPROVAL_TIMEOUT_MS = 4 * 60_000;
 
 /** Holds ephemeral runtime activity and blocking approvals. The firstmate ledger remains durable. */

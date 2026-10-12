@@ -68,7 +68,7 @@ function loopbackBaseUrl(value: string | undefined): string | null {
   }
 }
 
-/** Matches Pi's fixed HTTP headers timeout and outlasts Crew City's 4-minute default server wait. */
+/** Matches Pi's default HTTP idle timeout and outlasts Crew City's 4-minute default server wait. */
 const DEFAULT_APPROVAL_TIMEOUT_MS = 5 * 60_000;
 
 export class PiBridgeClient {
