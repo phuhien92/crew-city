@@ -81,7 +81,7 @@ Reference: the installed Pi 1.1.0 extension documentation and its permission-gat
 
 Pi does not expose a Claude Code `PermissionRequest` hook. Crew City therefore implements blocking approval as extension policy at Pi's pre-execution `tool_call` boundary. Calls marked read-only continue without a card. Destructive tools and non-read-only tools whose destructive/open-world behavior is not explicitly false block until an explicit response. The bridge also blocks on missing configuration, a non-loopback endpoint, network failure, timeout, or malformed response.
 
-The extension posts bearer-token-protected JSON to `POST /api/runtime/pi/events`. An approval POST stays open while the card is pending. The authenticated browser sends the decision over its existing WebSocket. Timeouts deny. Decisions are appended to Crew City's own approval audit JSONL before an allow response is released.
+The extension posts bearer-token-protected JSON to `POST /api/runtime/pi/events`. An approval POST stays open while the card is pending. The authenticated browser sends the decision over its existing WebSocket. Timeouts deny. If the runtime closes the POST before a decision, the approval is denied and audited with source `abandoned`, so a late click cannot approve a call Pi already blocked. Decisions are appended to Crew City's own approval audit JSONL before an allow response is released.
 
 ### 3. COWORK OS vault (step 3)
 

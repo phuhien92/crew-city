@@ -10,7 +10,7 @@ Logic stays pure and is tested without a browser or GPU. The approval interactio
 | --- | --- |
 | `test/ledger.test.ts` | Tailer: missing file, appended lines, partial lines, split UTF-8 characters, truncation |
 | `test/city.test.ts` | Parser and reducer against firstmate's documented sample ledger and a busy-fleet fixture: unknown events, duplicates, status before dispatch, phase rules |
-| `test/server.test.ts` | Real server on a free port: page and CSP header, 404s, WebSocket and runtime-event authentication/origin checks, ledger replay, Pi activity, malformed/duplicate/unsupported events, blocking approve and timeout-deny flows, audit output |
+| `test/server.test.ts` | Real server on a free port: page and CSP header, 404s, WebSocket and runtime-event authentication/origin checks, ledger replay, Pi activity, malformed/duplicate/unsupported events, blocking approve, timeout-deny, and abandoned-request deny flows, audit output |
 | `test/runtime-adapters.test.ts` | Adapter contract and capabilities, unsupported boundaries, Pi payload validation, activity ordering, duplicate/colliding events, duplicate blocking requests |
 | `test/pi-client.test.ts` | Pi annotation policy, normalized/authenticated events, explicit decisions, loopback configuration, malformed-response and timeout fail-closed behavior |
 | `test/ui.test.ts` | The real page in jsdom with a fake WebSocket: hostile ledger and runtime values render as text; one explicit approval decision is sent; only `https://` PR links become links; token is used and removed from the address bar |

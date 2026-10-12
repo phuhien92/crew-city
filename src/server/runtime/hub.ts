@@ -94,7 +94,8 @@ export class RuntimeHub {
     };
   }
 
-  async handleEvent(runtimeName: string, payload: unknown): Promise<RuntimeHttpResult> {
+  /** Aborting `signal` means the runtime stopped waiting, so a pending approval it opened is denied. */
+  async handleEvent(runtimeName: string, payload: unknown, signal?: AbortSignal): Promise<RuntimeHttpResult> {
     const adapter = getRuntimeAdapter(runtimeName);
     if (!adapter) throw new RuntimeRequestError("Unknown runtime adapter", 404);
     const event = adapter.parseEvent(payload);
@@ -152,6 +153,11 @@ export class RuntimeHub {
     });
     this.emitChange();
     this.pruneSeen();
+    const abandon = () => {
+      void this.settleApproval(requestId, "deny", "abandoned", "The runtime stopped waiting for approval");
+    };
+    if (signal?.aborted) abandon();
+    else signal?.addEventListener("abort", abandon, { once: true });
     return result;
   }
 
@@ -175,7 +181,7 @@ export class RuntimeHub {
   private async settleApproval(
     requestId: string,
     decision: ApprovalDecision,
-    source: "user" | "timeout" | "shutdown",
+    source: "user" | "timeout" | "shutdown" | "abandoned",
     reason: string,
   ): Promise<void> {
     const pending = this.pending.get(requestId);

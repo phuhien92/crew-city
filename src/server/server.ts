@@ -169,8 +169,12 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
           json(res, 401, { error: "Unauthorized" });
           return;
         }
+        const abandoned = new AbortController();
+        res.on("close", () => {
+          if (!res.writableFinished) abandoned.abort();
+        });
         try {
-          const result = await hub.handleEvent(runtimeMatch[1]!, await readJson(req));
+          const result = await hub.handleEvent(runtimeMatch[1]!, await readJson(req), abandoned.signal);
           json(res, result.status, result.body);
         } catch (error) {
           const status = error instanceof RuntimeRequestError ? error.status : 500;

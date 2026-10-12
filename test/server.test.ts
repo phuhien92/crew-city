@@ -216,6 +216,41 @@ describe("server: Pi adapter", () => {
     ws.close();
   });
 
+  it.each(["Pi operation abort", "Pi client timeout"] as const)(
+    "denies and clears the approval when Pi stops waiting: %s",
+    async (cause) => {
+      const s = await start();
+      const { ws, messages } = connect(s);
+      await waitFor(() => messages[0]);
+      const controller = new AbortController();
+      const client = new PiBridgeClient({
+        baseUrl: s.url,
+        token: RUNTIME_TOKEN,
+        taskId: "task-1",
+        id: () => "approval-abandoned",
+        approvalTimeoutMs: cause === "Pi client timeout" ? 200 : 60_000,
+      });
+      const response = client.requestApproval(
+        { toolCallId: "call-1", cwd: "/tmp/project", tool: { name: "bash", input: { command: "rm -rf build" } } },
+        controller.signal,
+      );
+      const queued = await waitFor(() => messages.find((message) => message.runtime?.approvals.length === 1));
+      const requestId = queued.runtime.approvals[0]!.requestId as string;
+      if (cause === "Pi operation abort") controller.abort();
+      await expect(response).resolves.toMatchObject({ decision: "deny" });
+
+      await waitFor(() =>
+        messages.find((message) => message.runtime?.approvals.length === 0 && message.runtime.activities["task-1"]?.summary === "Denied: bash"),
+      );
+      expect(JSON.parse(readFileSync(s.auditPath, "utf8").trim())).toMatchObject({ requestId, decision: "deny", source: "abandoned" });
+
+      ws.send(JSON.stringify({ type: "approval.decision", requestId, decision: "approve" }));
+      await waitFor(() => messages.find((message) => message.type === "approval.error"));
+      expect(readFileSync(s.auditPath, "utf8").trim().split("\n")).toHaveLength(1);
+      ws.close();
+    },
+  );
+
   it("denies when nobody responds", async () => {
     const s = await start("", { approvalTimeoutMs: 20 });
     const result = await postRuntime(

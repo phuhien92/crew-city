@@ -68,6 +68,9 @@ function loopbackBaseUrl(value: string | undefined): string | null {
   }
 }
 
+/** Longer than Crew City's default server wait, so the server's timeout denial arrives first. */
+const DEFAULT_APPROVAL_TIMEOUT_MS = 11 * 60_000;
+
 export class PiBridgeClient {
   private readonly baseUrl: string | null;
   private readonly token: string | null;
@@ -83,7 +86,7 @@ export class PiBridgeClient {
     this.token = options.token?.trim() || null;
     this.taskId = options.taskId?.trim() || null;
     this.activityTimeoutMs = options.activityTimeoutMs ?? 1_500;
-    this.approvalTimeoutMs = options.approvalTimeoutMs ?? 10 * 60_000;
+    this.approvalTimeoutMs = options.approvalTimeoutMs ?? DEFAULT_APPROVAL_TIMEOUT_MS;
     this.fetchImpl = options.fetch ?? fetch;
     this.now = options.now ?? Date.now;
     this.id = options.id ?? randomUUID;
@@ -99,7 +102,7 @@ export class PiBridgeClient {
       token: env.CREW_CITY_RUNTIME_TOKEN,
       taskId: env.CREW_CITY_TASK_ID,
       activityTimeoutMs: number(env.CREW_CITY_ACTIVITY_TIMEOUT_MS, 1_500),
-      approvalTimeoutMs: number(env.CREW_CITY_APPROVAL_TIMEOUT_MS, 10 * 60_000),
+      approvalTimeoutMs: number(env.CREW_CITY_APPROVAL_TIMEOUT_MS, DEFAULT_APPROVAL_TIMEOUT_MS),
     });
   }
 
