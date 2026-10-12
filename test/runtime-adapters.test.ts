@@ -1,7 +1,7 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { getRuntimeAdapter, runtimeAdapterDescriptors } from "../src/server/runtime/adapters.js";
 import { RuntimeRequestError } from "../src/server/runtime/contract.js";
 import { RuntimeHub } from "../src/server/runtime/hub.js";
@@ -21,6 +21,10 @@ function hub() {
   const dir = mkdtempSync(join(tmpdir(), "crew-city-runtime-"));
   return new RuntimeHub({ auditPath: join(dir, "audit.jsonl"), id: () => "request-1" });
 }
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("runtime adapter contract", () => {
   it("implements Pi and leaves the other runtimes behind explicit unsupported boundaries", () => {
@@ -96,5 +100,36 @@ describe("runtime event hub", () => {
     await expect(first).resolves.toMatchObject({ body: { decision: "deny" } });
     await expect(duplicate).resolves.toMatchObject({ body: { decision: "deny" } });
     await runtime.close();
+  });
+
+  it("denies by default before Pi's fixed 300-second HTTP headers timeout", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const dir = mkdtempSync(join(tmpdir(), "crew-city-runtime-"));
+    const auditPath = join(dir, "audit.jsonl");
+    const runtime = new RuntimeHub({ auditPath, id: () => "request-1" });
+    let settled = false;
+    const result = runtime
+      .handleEvent("pi", {
+        v: 1,
+        event: "approval.request",
+        eventId: "approval-default-timeout",
+        taskId: "task-1",
+        occurredAt: 1_790_200_000_000,
+        toolCallId: "call-1",
+        cwd: "/tmp/project",
+        tool: { name: "bash", input: { command: "rm -rf build" } },
+      })
+      .finally(() => {
+        settled = true;
+      });
+
+    await vi.advanceTimersByTimeAsync(4 * 60_000 - 1);
+    expect(settled).toBe(false);
+    expect(runtime.snapshot().approvals).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(result).resolves.toMatchObject({ status: 200, body: { decision: "deny" } });
+    expect(JSON.parse(readFileSync(auditPath, "utf8").trim())).toMatchObject({ decision: "deny", source: "timeout" });
+    expect(runtime.snapshot().approvals).toHaveLength(0);
   });
 });

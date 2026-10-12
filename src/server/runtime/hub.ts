@@ -59,6 +59,9 @@ export interface RuntimeHubOptions {
   id?: () => string;
 }
 
+/** Below Pi's fixed 300-second HTTP headers timeout, so Crew City's timeout denial reaches Pi first. */
+export const DEFAULT_APPROVAL_TIMEOUT_MS = 4 * 60_000;
+
 /** Holds ephemeral runtime activity and blocking approvals. The firstmate ledger remains durable. */
 export class RuntimeHub {
   private readonly approvalTimeoutMs: number;
@@ -71,7 +74,7 @@ export class RuntimeHub {
   private auditTail: Promise<void> = Promise.resolve();
 
   constructor(private readonly options: RuntimeHubOptions) {
-    this.approvalTimeoutMs = options.approvalTimeoutMs ?? 10 * 60_000;
+    this.approvalTimeoutMs = options.approvalTimeoutMs ?? DEFAULT_APPROVAL_TIMEOUT_MS;
     this.now = options.now ?? Date.now;
     this.id = options.id ?? randomUUID;
     if (!Number.isFinite(this.approvalTimeoutMs) || this.approvalTimeoutMs < 1) {

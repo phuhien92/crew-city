@@ -68,8 +68,8 @@ function loopbackBaseUrl(value: string | undefined): string | null {
   }
 }
 
-/** Longer than Crew City's default server wait, so the server's timeout denial arrives first. */
-const DEFAULT_APPROVAL_TIMEOUT_MS = 11 * 60_000;
+/** Matches Pi's fixed HTTP headers timeout and outlasts Crew City's 4-minute default server wait. */
+const DEFAULT_APPROVAL_TIMEOUT_MS = 5 * 60_000;
 
 export class PiBridgeClient {
   private readonly baseUrl: string | null;
