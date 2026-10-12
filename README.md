@@ -32,7 +32,7 @@ npm run demo                      # scripted fleet, no firstmate needed
 FM_HOME=~/firstmate npm start     # follow a real firstmate home
 ```
 
-Open the URL the server prints. It carries a `?token=`; keep it private, because the same token authorizes runtime events and approval decisions.
+Open the URL the server prints. It carries a `?token=`; keep it private, because that browser token approves tool calls. The server also prints a separate runtime token for agents. The runtime token can post activity and approval requests but cannot open the browser feed or approve anything, so a gated agent never holds the credential that approves it.
 
 To have firstmate write the ledger, create the flag file in its home:
 
@@ -40,15 +40,15 @@ To have firstmate write the ledger, create the flag file in its home:
 touch ~/firstmate/config/fleet-ledger
 ```
 
-Server settings (environment variables): `FM_HOME`, `LEDGER` (overrides the ledger path), `PORT` (default 4317), `HOST` (loopback only; default 127.0.0.1), `CREW_CITY_TOKEN` (fixed token instead of a random one), `APPROVAL_AUDIT` (default `~/.crew-city/approval-audit.jsonl`), and `APPROVAL_TIMEOUT_MS` (default 10 minutes).
+Server settings (environment variables): `FM_HOME`, `LEDGER` (overrides the ledger path), `PORT` (default 4317), `HOST` (loopback only; default 127.0.0.1), `CREW_CITY_TOKEN` (fixed browser token instead of a random one), `CREW_CITY_RUNTIME_TOKEN` (fixed runtime token; must differ from the browser token), `APPROVAL_AUDIT` (default `~/.crew-city/approval-audit.jsonl`), and `APPROVAL_TIMEOUT_MS` (default 10 minutes).
 
 ### Connect Pi
 
-Load the checked extension in each Pi worker and give it the printed server URL/token plus the firstmate ledger task id:
+Load the checked extension in each Pi worker and give it the printed server URL and runtime token plus the firstmate ledger task id:
 
 ```sh
 CREW_CITY_URL=http://127.0.0.1:4317 \
-CREW_CITY_TOKEN=<printed-token> \
+CREW_CITY_RUNTIME_TOKEN=<printed-runtime-token> \
 CREW_CITY_TASK_ID=<ledger-task-id> \
 pi --extension /path/to/crew-city/extensions/crew-city.ts
 ```

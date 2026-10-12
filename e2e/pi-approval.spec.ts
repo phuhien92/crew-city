@@ -5,6 +5,7 @@ import { expect, test } from "@playwright/test";
 import { startServer, type RunningServer } from "../src/server/server.js";
 
 const TOKEN = "playwright-token";
+const RUNTIME_TOKEN = "playwright-runtime-token";
 let server: RunningServer | undefined;
 
 test.afterEach(async () => {
@@ -21,6 +22,7 @@ test("Pi tool call blocks until the browser approves it", async ({ page, request
     auditPath: join(dir, "approval-audit.jsonl"),
     port: 0,
     token: TOKEN,
+    runtimeToken: RUNTIME_TOKEN,
     pollMs: 20,
   });
 
@@ -28,7 +30,7 @@ test("Pi tool call blocks until the browser approves it", async ({ page, request
   await expect(page.locator("#conn")).toHaveText("Live");
 
   const approvalResponse = request.post(`${server.url}/api/runtime/pi/events`, {
-    headers: { authorization: `Bearer ${TOKEN}` },
+    headers: { authorization: `Bearer ${RUNTIME_TOKEN}` },
     data: {
       v: 1,
       event: "approval.request",

@@ -96,7 +96,7 @@ export class PiBridgeClient {
     };
     return new PiBridgeClient({
       baseUrl: env.CREW_CITY_URL,
-      token: env.CREW_CITY_TOKEN,
+      token: env.CREW_CITY_RUNTIME_TOKEN,
       taskId: env.CREW_CITY_TASK_ID,
       activityTimeoutMs: number(env.CREW_CITY_ACTIVITY_TIMEOUT_MS, 1_500),
       approvalTimeoutMs: number(env.CREW_CITY_APPROVAL_TIMEOUT_MS, 10 * 60_000),
@@ -105,7 +105,7 @@ export class PiBridgeClient {
 
   get configurationError(): string | null {
     if (!this.baseUrl) return "CREW_CITY_URL must be an HTTP loopback URL";
-    if (!this.token) return "CREW_CITY_TOKEN is missing";
+    if (!this.token) return "CREW_CITY_RUNTIME_TOKEN is missing";
     if (!this.taskId) return "CREW_CITY_TASK_ID is missing";
     return null;
   }

@@ -19,14 +19,16 @@ const server = await startServer({
   host: process.env.HOST ?? "127.0.0.1",
   port: Number(process.env.PORT ?? 4317),
   token: process.env.CREW_CITY_TOKEN,
+  runtimeToken: process.env.CREW_CITY_RUNTIME_TOKEN,
   auditPath: process.env.APPROVAL_AUDIT ? resolve(expand(process.env.APPROVAL_AUDIT)) : undefined,
   approvalTimeoutMs: process.env.APPROVAL_TIMEOUT_MS ? Number(process.env.APPROVAL_TIMEOUT_MS) : undefined,
 });
 
 console.log(`Crew City following ${ledgerPath}${demo ? " (demo)" : ""}`);
 console.log(`Open ${server.url}/?token=${server.token}`);
+console.log(`Pi runtime token: CREW_CITY_RUNTIME_TOKEN=${server.runtimeToken}`);
 console.log(`Approval audit: ${server.auditPath}`);
-console.log("Keep that URL private: the token authorizes runtime events and approval decisions.");
+console.log("Keep the URL private: its token approves tool calls. Give agents only the runtime token, which cannot approve.");
 
 const shutdown = async () => {
   await server.close();

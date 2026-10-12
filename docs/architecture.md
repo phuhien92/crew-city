@@ -107,7 +107,7 @@ Planned use: each HQ becomes a district; its active tasks feed that district's b
 The server can approve tool calls on your machine, so it is treated as sensitive from step 1.
 
 - Binds only to loopback (`127.0.0.1` by default; `::1` is also accepted).
-- A random token is printed at startup. The WebSocket rejects a missing or wrong token (compared in constant time) and any foreign `Origin`. Runtime HTTP events require the same token as a bearer credential and reject foreign origins. The page removes the token from the address bar after reading it.
+- Two random tokens are printed at startup. The browser token opens the WebSocket, which carries approval decisions; the WebSocket rejects a missing or wrong token (compared in constant time) and any foreign `Origin`. Runtime HTTP events require the separate runtime token as a bearer credential and reject foreign origins. Each token works only on its own endpoint, so an agent holding the runtime token cannot approve its own tool calls. The page removes the token from the address bar after reading it.
 - The server binds to loopback by default, and the Pi bridge refuses non-loopback URLs so its bearer token is not sent remotely.
 - Content Security Policy on the page; data is rendered with `textContent`, never as HTML; only `https://` PR links are rendered as links.
 - Approval rules (step 2):

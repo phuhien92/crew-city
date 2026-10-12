@@ -6,7 +6,7 @@ import { PiBridgeClient, toolNeedsApproval } from "../src/pi/client.ts";
  *
  * Configuration:
  *   CREW_CITY_URL=http://127.0.0.1:4317
- *   CREW_CITY_TOKEN=<the token printed by Crew City>
+ *   CREW_CITY_RUNTIME_TOKEN=<the runtime token printed by Crew City>
  *   CREW_CITY_TASK_ID=<the firstmate ledger task id>
  */
 export default function crewCityExtension(pi: ExtensionAPI) {

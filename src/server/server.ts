@@ -25,8 +25,10 @@ export interface ServerOptions {
   /** 0 picks a free port. */
   port?: number;
   host?: string;
-  /** Random when omitted. */
+  /** Browser credential for the live feed and approval decisions. Random when omitted. */
   token?: string;
+  /** Runtime-event credential for agent adapters; it cannot open the browser feed. Random when omitted. */
+  runtimeToken?: string;
   /** How often the tailer polls as a backstop to file watching. */
   pollMs?: number;
   /** Approval audit JSONL. Defaults outside the firstmate home. */
@@ -39,6 +41,7 @@ export interface RunningServer {
   url: string;
   port: number;
   token: string;
+  runtimeToken: string;
   ledgerPath: string;
   auditPath: string;
   close(): Promise<void>;
@@ -80,18 +83,22 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
   }
   const urlHost = host === "::1" ? "[::1]" : host;
   const token = opts.token ?? randomBytes(16).toString("hex");
+  const runtimeToken = opts.runtimeToken ?? randomBytes(16).toString("hex");
+  if (token === runtimeToken) {
+    throw new Error("The runtime token must differ from the browser token");
+  }
   const { ledgerPath } = opts;
   const auditPath = opts.auditPath ?? join(homedir(), ".crew-city", "approval-audit.jsonl");
 
-  const tokenOk = (given: string | null) => {
+  const tokenMatches = (given: string | null, expected: string) => {
     if (!given) return false;
     const a = Buffer.from(given);
-    const b = Buffer.from(token);
+    const b = Buffer.from(expected);
     return a.length === b.length && timingSafeEqual(a, b);
   };
   const bearerOk = (authorization: string | undefined) => {
     const match = /^Bearer (.+)$/.exec(authorization ?? "");
-    return tokenOk(match?.[1] ?? null);
+    return tokenMatches(match?.[1] ?? null, runtimeToken);
   };
 
   const city = emptyCity();
@@ -189,7 +196,7 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024 });
   server.on("upgrade", (req, socket, head) => {
     const url = new URL(req.url ?? "/", "http://localhost");
-    if (url.pathname !== "/ws" || !sameOrigin(req) || !tokenOk(url.searchParams.get("token"))) {
+    if (url.pathname !== "/ws" || !sameOrigin(req) || !tokenMatches(url.searchParams.get("token"), token)) {
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
       socket.destroy();
       return;
@@ -239,6 +246,7 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
     url: `http://${urlHost}:${port}`,
     port,
     token,
+    runtimeToken,
     ledgerPath,
     auditPath,
     async close() {

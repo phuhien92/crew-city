@@ -4,7 +4,7 @@ Things not yet verified. Each one notes what is known, what is unknown, and wher
 
 ## Automatic Pi task configuration
 
-- **Known:** The Pi adapter links ephemeral events to durable lifecycle state through the explicit `CREW_CITY_TASK_ID` value. `CREW_CITY_URL` and `CREW_CITY_TOKEN` are explicit too; the adapter does not guess from a worktree path or session.
+- **Known:** The Pi adapter links ephemeral events to durable lifecycle state through the explicit `CREW_CITY_TASK_ID` value. `CREW_CITY_URL` and `CREW_CITY_RUNTIME_TOKEN` are explicit too; the adapter does not guess from a worktree path or session.
 - **Unknown:** How a future firstmate dispatch profile should inject these values and load `extensions/crew-city.ts` automatically without putting the token in committed settings.
 - **Check:** firstmate dispatch profiles and environment configuration before adding automatic setup.
 

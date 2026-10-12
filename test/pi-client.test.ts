@@ -63,6 +63,14 @@ describe("Pi bridge client", () => {
     ).resolves.toMatchObject({ decision: "deny", reason: expect.stringContaining("unavailable") });
   });
 
+  it("reads only the runtime token from the environment", () => {
+    const base = { CREW_CITY_URL: "http://127.0.0.1:4317", CREW_CITY_TASK_ID: "task" };
+    expect(PiBridgeClient.fromEnvironment({ ...base, CREW_CITY_TOKEN: "browser" }).configurationError).toBe(
+      "CREW_CITY_RUNTIME_TOKEN is missing",
+    );
+    expect(PiBridgeClient.fromEnvironment({ ...base, CREW_CITY_RUNTIME_TOKEN: "runtime" }).configurationError).toBeNull();
+  });
+
   it("denies when configuration is missing or the URL is not loopback", async () => {
     const fetchImpl = vi.fn() as unknown as typeof fetch;
     for (const baseUrl of [undefined, "https://127.0.0.1:4317", "http://example.com:4317", "http://127.0.0.1:4317/not-crew-city"]) {

@@ -7,6 +7,7 @@ import { PiBridgeClient } from "../src/pi/client.js";
 import { CSP, startServer, type RunningServer } from "../src/server/server.js";
 
 const TOKEN = "test-token-123";
+const RUNTIME_TOKEN = "test-runtime-token-456";
 const rec = (o: Record<string, unknown>) => JSON.stringify({ v: 1, ts: 1790200000, ...o }) + "\n";
 
 let server: RunningServer | null = null;
@@ -24,6 +25,7 @@ async function start(initial = "", options: { approvalTimeoutMs?: number } = {})
     auditPath: join(dir, "approval-audit.jsonl"),
     port: 0,
     token: TOKEN,
+    runtimeToken: RUNTIME_TOKEN,
     pollMs: 50,
     approvalTimeoutMs: options.approvalTimeoutMs,
   });
@@ -81,7 +83,7 @@ function postRuntime(s: RunningServer, body: unknown, options: { token?: string;
   return fetch(`${s.url}/api/runtime/${options.runtime ?? "pi"}/events`, {
     method: "POST",
     headers: {
-      authorization: `Bearer ${options.token ?? TOKEN}`,
+      authorization: `Bearer ${options.token ?? RUNTIME_TOKEN}`,
       "content-type": "application/json",
       ...(options.origin ? { origin: options.origin } : {}),
     },
@@ -94,6 +96,12 @@ describe("server: page", () => {
     const ledgerPath = join(mkdtempSync(join(tmpdir(), "crew-city-bind-")), "fleet-ledger.jsonl");
     writeFileSync(ledgerPath, "");
     await expect(startServer({ ledgerPath, host: "0.0.0.0", port: 0 })).rejects.toThrow("loopback");
+  });
+
+  it("refuses a runtime token equal to the browser token", async () => {
+    const ledgerPath = join(mkdtempSync(join(tmpdir(), "crew-city-tokens-")), "fleet-ledger.jsonl");
+    writeFileSync(ledgerPath, "");
+    await expect(startServer({ ledgerPath, port: 0, token: "same", runtimeToken: "same" })).rejects.toThrow("differ");
   });
 
   it("serves the page with a content security policy", async () => {
@@ -127,12 +135,22 @@ describe("server: live feed auth", () => {
     const s = await start();
     expect(await expectRejected(s, { origin: "http://evil.example" })).toContain("401");
   });
+
+  it("rejects the runtime token, so an agent cannot open the approval channel", async () => {
+    const s = await start();
+    expect(await expectRejected(s, { token: RUNTIME_TOKEN })).toContain("401");
+  });
 });
 
 describe("server: runtime event security", () => {
   it.each(["", "wrong"])("rejects a missing or wrong bearer token: %j", async (token) => {
     const s = await start();
     expect((await postRuntime(s, piEvent(), { token })).status).toBe(401);
+  });
+
+  it("rejects the browser token as a runtime credential", async () => {
+    const s = await start();
+    expect((await postRuntime(s, piEvent(), { token: TOKEN })).status).toBe(401);
   });
 
   it("rejects a foreign Origin even with the bearer token", async () => {
@@ -157,7 +175,7 @@ describe("server: Pi adapter", () => {
     const { ws, messages } = connect(s);
     await waitFor(() => messages[0]);
 
-    const client = new PiBridgeClient({ baseUrl: s.url, token: TOKEN, taskId: "task-1", id: () => "pi-client-activity" });
+    const client = new PiBridgeClient({ baseUrl: s.url, token: RUNTIME_TOKEN, taskId: "task-1", id: () => "pi-client-activity" });
     await expect(client.activity({ state: "thinking", summary: "Thinking", cwd: "/tmp/project" })).resolves.toBe(true);
     const update = await waitFor(() => messages.find((message) => message.runtime.activities["task-1"]?.summary === "Thinking"));
     expect(update.districts.webapp![0]).toMatchObject({
@@ -171,7 +189,7 @@ describe("server: Pi adapter", () => {
     const s = await start();
     const { ws, messages } = connect(s);
     await waitFor(() => messages[0]);
-    const client = new PiBridgeClient({ baseUrl: s.url, token: TOKEN, taskId: "task-1", id: () => "approval-1" });
+    const client = new PiBridgeClient({ baseUrl: s.url, token: RUNTIME_TOKEN, taskId: "task-1", id: () => "approval-1" });
     const response = client.requestApproval({
       toolCallId: "call-1",
       cwd: "/tmp/project",
