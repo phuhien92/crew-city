@@ -16,10 +16,10 @@ Firstmate and the vault stay untouched. Crew City only reads from them, apart fr
 City UI  (browser)
    ▲  WebSocket, token-gated, 127.0.0.1 only
 Wrapper server
-   ├─ Ledger tailer   ← firstmate state/fleet-ledger.jsonl     (step 1, done)
-   ├─ Hook endpoint   ← Claude Code hooks, approvals            (step 2)
-   ├─ Vault reader    ← COWORK OS HQs → districts, read-only    (step 3)
-   └─ Command relay   → first mate's tmux pane                  (step 5)
+   ├─ Ledger tailer    ← firstmate state/fleet-ledger.jsonl     (durable lifecycle)
+   ├─ Runtime adapters ← Pi activity + blocking approvals       (step 2, done)
+   ├─ Vault reader     ← COWORK OS HQs → districts, read-only   (step 3)
+   └─ Command relay    → first mate's tmux pane                 (step 5)
 ```
 
 ## Run it
@@ -32,7 +32,7 @@ npm run demo                      # scripted fleet, no firstmate needed
 FM_HOME=~/firstmate npm start     # follow a real firstmate home
 ```
 
-Open the URL the server prints. It carries a `?token=`; keep it private, because the same token will authorize approvals later.
+Open the URL the server prints. It carries a `?token=`; keep it private, because that browser token approves tool calls. The server also prints a separate runtime token for agents. The runtime token can post activity and approval requests but cannot open the browser feed or approve anything, so a gated agent never holds the credential that approves it.
 
 To have firstmate write the ledger, create the flag file in its home:
 
@@ -40,7 +40,26 @@ To have firstmate write the ledger, create the flag file in its home:
 touch ~/firstmate/config/fleet-ledger
 ```
 
-Settings (environment variables): `FM_HOME`, `LEDGER` (overrides the ledger path), `PORT` (default 4317), `HOST` (default 127.0.0.1), `CREW_CITY_TOKEN` (fixed token instead of a random one).
+Server settings (environment variables): `FM_HOME`, `LEDGER` (overrides the ledger path), `PORT` (default 4317), `HOST` (loopback only; default 127.0.0.1), `CREW_CITY_TOKEN` (fixed browser token instead of a random one; set it only on the server command line, never in a shell profile or any Pi agent environment), `CREW_CITY_RUNTIME_TOKEN` (fixed runtime token; must differ from the browser token), `APPROVAL_AUDIT` (default `~/.crew-city/approval-audit.jsonl`), and `APPROVAL_TIMEOUT_MS` (default 4 minutes, so the timeout denial and its audit entry reach Pi before Pi's default 5-minute HTTP idle timeout, Pi's configurable `httpIdleTimeout` setting).
+
+### Connect Pi
+
+Load the checked extension in each Pi worker and give it the printed server URL and runtime token plus the firstmate ledger task id:
+
+```sh
+CREW_CITY_URL=http://127.0.0.1:4317 \
+CREW_CITY_RUNTIME_TOKEN=<printed-runtime-token> \
+CREW_CITY_TASK_ID=<ledger-task-id> \
+pi --extension /path/to/crew-city/extensions/crew-city.ts
+```
+
+The extension uses Pi's supported lifecycle and `tool_call` events. Explicitly read-only tools continue; destructive tools and non-read-only tools whose destructive/open-world behavior is not explicitly false wait for an Approve/Deny click. A denial, timeout, malformed response, unreachable server, or incomplete configuration blocks the tool – nothing defaults to approval.
+
+The browser approver token belongs only to the Crew City server and the browser. Never put `CREW_CITY_TOKEN` or the browser URL into a Pi agent's environment: anything Pi runs could then approve its own tool calls.
+
+Optional Pi settings are `CREW_CITY_ACTIVITY_TIMEOUT_MS` (default 1.5 seconds) and `CREW_CITY_APPROVAL_TIMEOUT_MS` (default 5 minutes; keep it longer than the server's `APPROVAL_TIMEOUT_MS` so Crew City's timeout denial arrives first). Pi's own `httpIdleTimeout` setting also bounds the wait: a value of it or `CREW_CITY_APPROVAL_TIMEOUT_MS` shorter than `APPROVAL_TIMEOUT_MS` shortens the approval window to that value, and a longer `APPROVAL_TIMEOUT_MS` has no effect beyond it. Either way the result still fails closed: if Pi stops waiting – the turn is aborted or a Pi-side timeout fires – Pi blocks the tool, and Crew City denies the pending approval, audits it as `abandoned`, and removes the card.
+
+Pi is implemented. Claude Code, Codex, and OpenCode currently expose named adapter boundaries and report their live-activity and approval capabilities as unsupported until a real integration is built.
 
 ## How a task maps to the city
 
@@ -59,7 +78,8 @@ The reducer in `src/server/city.ts` is pure, so restarting the server replays th
 ## Develop
 
 ```sh
-npm test          # all tests: tailer, reducer, server, and page safety
+npm test          # unit and server integration tests
+npm run test:e2e  # real-browser Pi approval flow (install Chromium with npx playwright install chromium)
 npm run typecheck
 npm run dev       # restart on change
 ```
@@ -72,10 +92,13 @@ Code layout:
 | --- | --- |
 | `src/server/ledger.ts` | Ledger parser and tailer |
 | `src/server/city.ts` | Pure reducer: ledger events to city state |
-| `src/server/server.ts` | `startServer()`: HTTP page, token-gated WebSocket feed |
+| `src/server/server.ts` | `startServer()`: HTTP page, token-gated WebSocket feed and runtime endpoint |
+| `src/server/runtime/` | Runtime-neutral contract, adapter registry, Pi parser, approval hub |
+| `src/pi/client.ts` | Fail-closed Pi-to-Crew-City client |
+| `extensions/crew-city.ts` | Pi extension entry point |
 | `src/server/index.ts` | Command-line entry |
 | `src/server/demo.ts` | Scripted fleet for `npm run demo` |
-| `public/index.html` | Step 1 list UI |
+| `public/index.html` | Task list, live activity, and approval queue UI |
 | `test/` | Vitest tests and fixtures |
 
 ## Docs
@@ -91,7 +114,7 @@ Code layout:
 ## Roadmap
 
 1. Ledger tailer + list UI ✅
-2. Hook endpoint: live activity and Approve/Deny via Claude Code's `PermissionRequest` hook
+2. Runtime adapter layer, with Pi live activity and blocking Approve/Deny ✅
 3. Vault reader: COWORK OS HQs as districts (read-only)
 4. 3D isometric city with react-three-fiber
 5. Command relay (merge, decisions) and voice

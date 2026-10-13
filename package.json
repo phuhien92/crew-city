@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "A city view of your firstmate crew and COWORK OS",
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run test",
+    "test:e2e": "playwright test",
     "dev": "tsx watch src/server/index.ts",
     "start": "tsx src/server/index.ts",
     "typecheck": "tsc --noEmit",
@@ -14,6 +15,8 @@
     "ws": "^8.22.0"
   },
   "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^1.1.0",
+    "@playwright/test": "^1.64.0",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^26.6.5",
     "@types/ws": "^8.18.2",

@@ -16,7 +16,7 @@ Each entry records what was decided, why, and what was considered instead. Newes
 
 ## 2. Build a standalone wrapper, not a fork
 
-**Decided:** Crew City is its own project that reads from firstmate, Claude Code hooks, and the vault.
+**Decided:** Crew City is its own project that reads from firstmate, runtime adapters, and the vault.
 
 **Why:** It combines three sources into one custom UI. A fork of one tool would carry that tool's assumptions and need constant rebasing.
 
@@ -54,7 +54,7 @@ Each entry records what was decided, why, and what was considered instead. Newes
 
 **Decided:**
 1. Ledger tailer + list UI
-2. Hook endpoint and approvals
+2. Runtime adapter endpoint and approvals
 3. Vault reader
 4. City renderer
 5. Command relay and voice
@@ -89,4 +89,14 @@ Each entry records what was decided, why, and what was considered instead. Newes
 
 **Why:** Fast, repeatable tests that cost no tokens. Step 1 is already covered end to end with a real server and the real page in jsdom; a browser suite earns its place where jsdom can't reach: real clicks on approvals, WebGL, and the desktop app.
 
-**Considered:** Adding Playwright now. It would mostly repeat the jsdom tests while the UI is a single list page.
+**Considered:** Adding Playwright in step 1. It would mostly repeat the jsdom tests while the UI is a single list page.
+
+## 12. Runtime-neutral boundary, Pi first
+
+**Decided (step 2):** Keep firstmate's ledger as the only durable task-lifecycle source. Put ephemeral activity and blocking approvals behind a small runtime adapter contract. Implement Pi first; leave Claude Code, Codex, and OpenCode as explicit boundary-only adapters whose capabilities report unsupported.
+
+**Why:** A harness-specific Step 2 would couple the product to one worker runtime and duplicate lifecycle state already published by firstmate. Pi has a supported asynchronous `tool_call` event that runs before execution, so an extension can wait for Crew City's explicit decision and return a block result on deny. This is an extension policy boundary, not a claim that Pi has Claude Code's `PermissionRequest` hook.
+
+**Safety choice:** Gate tools using Pi's documented annotations, treating missing annotations as requiring approval. Missing configuration, non-loopback URLs, request failures, malformed responses, and timeouts deny rather than allow. Do not implement guessed integrations for the other runtimes.
+
+**Considered:** Pretending all runtimes have the same native approval API. Rejected because capability parity has to be demonstrated, not inferred.

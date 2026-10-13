@@ -10,7 +10,10 @@ const HTML = readFileSync(new URL("../public/index.html", import.meta.url), "utf
 function loadPage(token: string | null = "t0k3n") {
   const sockets: FakeSocket[] = [];
   class FakeSocket {
+    static OPEN = 1;
     url: string;
+    readyState = FakeSocket.OPEN;
+    sent: string[] = [];
     onopen: (() => void) | null = null;
     onmessage: ((e: { data: string }) => void) | null = null;
     onclose: (() => void) | null = null;
@@ -18,7 +21,7 @@ function loadPage(token: string | null = "t0k3n") {
       this.url = url;
       sockets.push(this);
     }
-    send() {}
+    send(value: string) { this.sent.push(value); }
     close() {}
   }
   const dom = new JSDOM(HTML, {
@@ -38,10 +41,11 @@ const city = (tasks: Array<Record<string, unknown>>) => ({
   stats: { population: 0, crew: tasks.length, fires: 0, needsYou: 0 },
   districts: {
     webapp: tasks.map((t) => ({
-      id: "t", kind: "ship", project: "webapp", harness: "claude", model: null, phase: "working",
-      activity: null, decisionKey: null, pr: null, workerPresent: true, dispatchedAt: 1, updatedAt: 1, ...t,
+      id: "t", kind: "ship", project: "webapp", harness: "pi", model: null, phase: "working",
+      activity: null, liveActivity: null, decisionKey: null, pr: null, workerPresent: true, dispatchedAt: 1, updatedAt: 1, ...t,
     })),
   },
+  runtime: { adapters: [], activities: {}, approvals: [] as Array<Record<string, unknown>> },
 });
 
 describe("page: hostile data shows as text", () => {
@@ -59,10 +63,11 @@ describe("page: hostile data shows as text", () => {
     expect((dom.window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
   });
 
-  it.each(attacks)("task id, decision key, and harness: %s", (payload) => {
+  it.each(attacks)("task id, decision key, harness, and live activity: %s", (payload) => {
     const { dom, doc, deliver } = loadPage();
-    deliver(city([{ id: payload, harness: payload, phase: "needs-decision", decisionKey: payload, activity: "?" }]));
+    deliver(city([{ id: payload, harness: payload, phase: "needs-decision", decisionKey: payload, activity: "?", liveActivity: { runtime: "pi", summary: payload } }]));
     expect(doc.querySelector(".name")!.textContent).toBe(payload);
+    expect(doc.querySelector(".live-activity")!.textContent).toContain(payload);
     expect(doc.querySelectorAll("#city img, #city script, #city svg")).toHaveLength(0);
     expect((dom.window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
   });
@@ -94,6 +99,45 @@ describe("page: PR links", () => {
       expect(doc.querySelectorAll("#city a")).toHaveLength(0);
     },
   );
+});
+
+describe("page: approvals", () => {
+  it("renders hostile runtime data as text and sends one explicit decision", () => {
+    const attack = '<img src=x onerror="window.__pwned=1">';
+    const { dom, doc, sockets, deliver } = loadPage();
+    sockets[0]!.onopen!();
+    const msg = city([{}]);
+    msg.runtime.approvals = [{
+      requestId: "request-1",
+      runtime: attack,
+      taskId: attack,
+      requestedAt: 1,
+      cwd: attack,
+      tool: { name: "bash", input: { command: attack } },
+    }];
+    msg.stats.needsYou = 1;
+    deliver(msg);
+
+    expect(doc.getElementById("approvals")!.hidden).toBe(false);
+    expect(doc.querySelector(".approval")!.textContent).toContain(attack);
+    expect(doc.querySelectorAll("#approvals img, #approvals script, #approvals svg")).toHaveLength(0);
+    expect((dom.window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
+
+    const approve = doc.querySelector<HTMLButtonElement>("button.approve")!;
+    const deny = doc.querySelector<HTMLButtonElement>("button.deny")!;
+    approve.click();
+    approve.click();
+    expect(approve.disabled).toBe(true);
+    expect(deny.disabled).toBe(true);
+    expect(sockets[0]!.sent).toHaveLength(1);
+    expect(JSON.parse(sockets[0]!.sent[0]!)).toEqual({ type: "approval.decision", requestId: "request-1", decision: "approve" });
+
+    deliver({ type: "approval.error", requestId: "request-1", error: "Decision was not recorded" });
+    const retry = doc.querySelector<HTMLButtonElement>("button.deny")!;
+    expect(retry.disabled).toBe(false);
+    retry.click();
+    expect(JSON.parse(sockets[0]!.sent[1]!)).toEqual({ type: "approval.decision", requestId: "request-1", decision: "deny" });
+  });
 });
 
 describe("page: token handling", () => {

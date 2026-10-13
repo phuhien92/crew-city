@@ -2,41 +2,23 @@
 
 Things not yet verified. Each one notes what is known, what is unknown, and where to look. Move an item to `architecture.md` or `decisions.md` once it is settled.
 
-## Linking a task to its Claude session
+## Automatic Pi task configuration
 
-- **Known:** Ledger records carry a `task` id but no session id or worktree path. Every Claude Code hook input carries `session_id` and `cwd`.
-- **Unknown:** How firstmate names a task's worktree directory (via [treehouse](https://github.com/kunchenguid/treehouse)), and whether the task id appears in that path.
-- **Check:** firstmate's `bin/` scripts and `docs/architecture.md`; treehouse's worktree naming.
+- **Known:** The Pi adapter links ephemeral events to durable lifecycle state through the explicit `CREW_CITY_TASK_ID` value. `CREW_CITY_URL` and `CREW_CITY_RUNTIME_TOKEN` are explicit too; the adapter does not guess from a worktree path or session.
+- **Unknown:** How a future firstmate dispatch profile should inject these values and load `extensions/crew-city.ts` automatically without putting the token in committed settings.
+- **Check:** firstmate dispatch profiles and environment configuration before adding automatic setup.
 
-## Crewmate permission mode
+## Future Claude Code adapter
 
-- **Known:** The approval queue depends on `PermissionRequest` hooks firing in crewmate sessions.
-- **Unknown:** Whether firstmate launches Claude Code crewmates with permissions bypassed. If it does, no permission requests fire, and approvals would mostly be decisions and merges.
-- **Check:** How firstmate starts crewmate sessions (`bin/` scripts, dispatch profiles in `docs/configuration.md`).
-
-## Terminal prompt while a hook is waiting
-
-- **Known:** A `PermissionRequest` hook that times out returns no decision, and the normal permission flow continues.
-- **Unknown:** Whether Claude Code shows its own terminal prompt while the hook is still waiting, or only after.
-- **Check:** Test with a hook that sleeps.
-
-## "Always allow" from the UI
-
-- **Known:** The hooks docs say a `PermissionRequest` hook can apply permission rules so the user isn't prompted again.
-- **Unknown:** The exact output field for that.
-- **Check:** "PermissionRequest decision control" in the [hooks reference](https://code.claude.com/docs/en/hooks).
+- **Known:** Claude Code, Codex, and OpenCode are boundary-only adapters today. Crew City makes no capability claim for them. Earlier research found a Claude Code `PermissionRequest` HTTP hook, but it is not implemented or tested here.
+- **Unknown:** Whether firstmate's Claude Code launch mode emits permission requests, how its terminal prompt behaves while an HTTP hook waits, and how Crew City hooks coexist with firstmate's own hooks.
+- **Check:** Re-read the then-current primary runtime documentation and test fail-closed behavior before changing any capability declaration.
 
 ## Supported input channel into the first mate
 
 - **Known:** Firstmate has Relay (X and Discord mentions) and a voice relay (`docs/voice-relay.md`). `tmux send-keys` into the first mate's pane works with any harness.
 - **Unknown:** Whether firstmate offers a supported local channel for sending captain messages that is more robust than keystrokes.
 - **Check:** firstmate `docs/configuration.md`, `docs/voice-relay.md`, `AGENTS.md`.
-
-## Hooks coexisting
-
-- **Known:** Firstmate tracks its own hooks in the repo (for example a Claude Code Stop hook for the primary session). Claude Code merges hooks across settings levels and runs all matching hooks in parallel.
-- **Unknown:** Whether a user-level Crew City hook and firstmate's project hooks interfere in practice.
-- **Check:** Run both and inspect `/hooks` in a crewmate session.
 
 ## Ledger tailer: truncate-then-refill
 
